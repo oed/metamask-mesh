@@ -1,6 +1,7 @@
 'use strict'
 const blockHeaderFromRpc = require('ethereumjs-block/header-from-rpc')
 const ethUtil = require('ethereumjs-util')
+const namehash = require('eth-ens-namehash')
 const cidFromHash = require('ipld-eth-star/util/cidFromHash')
 const CID = require('cids')
 const ObsStore = require('obs-store')
@@ -28,6 +29,7 @@ const store = new ObsStore({
   pseudoQuery: '/eth/latest/state/0x52bc44d5378309ee2abf1539bf71de1b7d7be3b5/balance',
   dagQuery: '',
   tokenHolder: '0x1d805bc00b8fa3c96ae6c8fa97b2fd24b19a9801',
+  ensName: 'ethereum.eth',
   isRpcSyncing: false,
 })
 
@@ -144,6 +146,9 @@ const actions = global.actions = {
   setTokenHolder: (tokenHolder) => {
     store.updateState({ tokenHolder })
   },
+  setENSName: (ensName) => {
+    store.updateState({ ensName })
+  },
   lookupTokenBalance: async () => {
     const resultDisplay = document.querySelector('#token-result')
     resultDisplay.value = ''
@@ -175,6 +180,57 @@ const actions = global.actions = {
 
     console.log('balance:', balance)
     resultDisplay.value = balance
+  },
+  lookupENSRecord: async () => {
+    const resultDisplay = document.querySelector('#ens-result')
+    resultDisplay.value = ''
+
+    const registryABI = [{
+      "constant": true,
+      "inputs": [
+        {
+          "name": "node",
+          "type": "bytes32"
+        }
+      ],
+      "name": "resolver",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "type": "function"
+    }]
+    const resolverABI = [{
+      "constant": true,
+      "inputs": [
+        {
+          "name": "node",
+          "type": "bytes32"
+        }
+      ],
+      "name": "addr",
+      "outputs": [
+        {
+          "name": "",
+          "type": "address"
+        }
+      ],
+      "type": "function"
+    }]
+    const registry = tools.eth.contract(registryABI).at('0x314159265dd8dbb310642f98f50c066173c1259b')
+    const { ensName } = store.getState()
+    const node = namehash.hash(ensName)
+    console.log('namehash:', node)
+    const resolverAddr = (await registry.resolver(node))[0]
+    console.log('resolver address:', resolverAddr)
+
+    const resolver = tools.eth.contract(resolverABI).at(resolverAddr)
+    const address = (await resolver.addr(node))[0]
+
+    console.log('ENS result: ', address)
+    resultDisplay.value = address
   },
   connectToPeer: (event) => {
     const element = event.target

@@ -143,6 +143,41 @@ function render(state, actions) {
 
           ]),
 
+          h('#ens-container.panel', [
+
+            //
+            // ens lookup
+            //
+
+            h('h2.space-top', 'ENS lookup'),
+
+            // ens name
+            h('input#ens-query', {
+              'attributes': {
+                'type': 'text',
+                'placeholder': 'eth-ipfs pseudo path',
+                'value': state.ensName,
+              },
+              oninput: (event) => actions.setENSName(event.target.value),
+            }),
+
+            // initiate lookup
+            h('button', {
+              'attributes': {
+                'disabled': state.bestBlock ? undefined : true,
+                'type': 'button'
+              },
+              onclick: actions.lookupENSRecord,
+            }, `Preform ENS Lookup`),
+
+            // cid path
+            h('input#ens-result', {
+              type: 'text',
+              disabled: true,
+            }),
+
+          ]),
+
           // peer status
           h('div.left.panel', [
             h('div#details'+ state.peerInfo.addresses ? '' : '.disabled', [
